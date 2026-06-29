@@ -8,16 +8,8 @@ import '../models/message.dart';
 
 class ApiService {
   // Automatically detects platform and routes to appropriate local IP address
-  static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:5000';
-    } else if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://127.0.0.1:5000';
-    } else {
+  static String get baseUrl => 'https://vasl-backend.onrender.com';
 
-      return '192.168.56.1';
-    }
-  }
 
   /// Update or register user profile on the server
   static Future<UserModel> updateProfile({
