@@ -46,9 +46,24 @@ class AuthProvider extends ChangeNotifier {
         avatarUrl: avatarUrl,
       );
 
-      // If user has set a username, notify server and establish socket connection
+      // If user has set a username, establish socket connection and sync in background
       if (isRegistered) {
-        await syncProfileWithServer(_currentUser!.username, _currentUser!.avatarUrl);
+        _socketService.connect(_currentUser!.userId);
+        
+        // Sync profile to database in the background without blocking app startup
+        ApiService.updateProfile(
+          userId: _currentUser!.userId,
+          username: _currentUser!.username,
+          avatarUrl: _currentUser!.avatarUrl,
+        ).then((updatedUser) async {
+          _currentUser = updatedUser;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('username', updatedUser.username);
+          await prefs.setString('avatarUrl', updatedUser.avatarUrl);
+          notifyListeners();
+        }).catchError((err) {
+          debugPrint('Background startup profile sync failed (offline): $err');
+        });
       }
     } catch (e) {
       _errorMessage = 'Failed to load local profile: $e';
