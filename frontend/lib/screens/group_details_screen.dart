@@ -39,6 +39,57 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
     );
   }
 
+  /// Displays a sleek pop-up dialog showing user profile name and profile image
+  void _showUserProfileDialog(BuildContext context, String userId, String username, String avatarUrl) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 54,
+                  backgroundColor: AppTheme.selfBubbleColor,
+                  backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                  child: avatarUrl.isEmpty
+                      ? const Icon(Icons.person, size: 54, color: Colors.grey)
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  username,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'User ID: ${userId.substring(0, 8)}...',
+                  style: TextStyle(
+                    color: AppTheme.textLightColor.withValues(alpha: 0.8),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final chatProvider = Provider.of<ChatProvider>(context);
@@ -161,6 +212,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                                 final isCreator = member.userId == group.createdBy;
 
                                 return ListTile(
+                                  onTap: () => _showUserProfileDialog(context, member.userId, member.username, member.avatarUrl),
                                   contentPadding: EdgeInsets.zero,
                                   leading: CircleAvatar(
                                     radius: 18,

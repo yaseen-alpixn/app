@@ -351,7 +351,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                           ),
                                           subtitle: Text(
-                                            lastMessage?.text ?? 'Tap to chat',
+                                            lastMessage != null ? '${lastMessage.senderName}: ${lastMessage.text}' : 'Tap to chat',
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
@@ -398,7 +398,15 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.chat_outlined, size: 72, color: Colors.grey),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                'assets/logo.jpeg',
+                height: 100,
+                width: 100,
+                fit: BoxFit.cover,
+              ),
+            ),
             const SizedBox(height: 16),
             const Text(
               'Welcome to VASL',

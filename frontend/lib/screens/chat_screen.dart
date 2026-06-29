@@ -78,6 +78,69 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
   }
 
+  /// Displays a sleek pop-up dialog showing user profile name and profile image
+  void _showUserProfileDialog(BuildContext context, String userId, String username) {
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    final details = chatProvider.getDetails(widget.groupId);
+    
+    // Attempt to resolve avatarUrl from resolved members in the provider cache
+    String avatarUrl = '';
+    if (details != null) {
+      final memberIndex = details.resolvedMembers.indexWhere((m) => m.userId == userId);
+      if (memberIndex != -1) {
+        avatarUrl = details.resolvedMembers[memberIndex].avatarUrl;
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 54,
+                  backgroundColor: AppTheme.selfBubbleColor,
+                  backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                  child: avatarUrl.isEmpty
+                      ? const Icon(Icons.person, size: 54, color: Colors.grey)
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  username,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'User ID: ${userId.substring(0, 8)}...',
+                  style: TextStyle(
+                    color: AppTheme.textLightColor.withValues(alpha: 0.8),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
@@ -210,12 +273,16 @@ class _ChatScreenState extends State<ChatScreen> {
             if (!isSelf)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4.0),
-                child: Text(
-                  message.senderName,
-                  style: const TextStyle(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                child: GestureDetector(
+                  onTap: () => _showUserProfileDialog(context, message.senderId, message.senderName),
+                  child: Text(
+                    message.senderName,
+                    style: const TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      decoration: TextDecoration.underline,
+                    ),
                   ),
                 ),
               ),
