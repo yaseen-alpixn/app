@@ -141,4 +141,29 @@ class ApiService {
       throw Exception('Network error: $e');
     }
   }
+
+  /// Update group profile picture (avatar) on the server
+  static Future<GroupModel> updateGroupAvatar({
+    required String groupId,
+    required String avatarUrl,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/groups/$groupId/avatar'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'avatarUrl': avatarUrl,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return GroupModel.fromJson(json.decode(response.body));
+      } else {
+        final err = json.decode(response.body);
+        throw Exception(err['message'] ?? 'Failed to update group icon.');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
 }

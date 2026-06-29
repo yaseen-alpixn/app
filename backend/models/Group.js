@@ -19,6 +19,10 @@ const groupSchema = new mongoose.Schema({
   createdBy: {
     type: String,
     required: true,
+  },
+  avatarUrl: {
+    type: String,
+    default: '',
   }
 }, {
   timestamps: true

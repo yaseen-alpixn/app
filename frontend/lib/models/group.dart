@@ -7,6 +7,7 @@ class GroupModel {
   final List<String> members;
   final List<UserModel> resolvedMembers;
   final String createdBy;
+  final String avatarUrl;
   final DateTime? createdAt;
 
   GroupModel({
@@ -16,6 +17,7 @@ class GroupModel {
     this.members = const [],
     this.resolvedMembers = const [],
     required this.createdBy,
+    this.avatarUrl = '',
     this.createdAt,
   });
 
@@ -43,6 +45,7 @@ class GroupModel {
       members: rawMembers,
       resolvedMembers: resolved,
       createdBy: json['createdBy'] ?? '',
+      avatarUrl: json['avatarUrl'] ?? '',
       createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) : null,
     );
   }
@@ -56,6 +59,7 @@ class GroupModel {
           ? resolvedMembers.map((e) => e.toJson()).toList()
           : members,
       'createdBy': createdBy,
+      'avatarUrl': avatarUrl,
       'createdAt': createdAt?.toIso8601String(),
     };
   }
@@ -67,6 +71,7 @@ class GroupModel {
     List<String>? members,
     List<UserModel>? resolvedMembers,
     String? createdBy,
+    String? avatarUrl,
     DateTime? createdAt,
   }) {
     return GroupModel(
@@ -76,6 +81,7 @@ class GroupModel {
       members: members ?? this.members,
       resolvedMembers: resolvedMembers ?? this.resolvedMembers,
       createdBy: createdBy ?? this.createdBy,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       createdAt: createdAt ?? this.createdAt,
     );
   }

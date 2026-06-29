@@ -337,14 +337,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                           leading: CircleAvatar(
                                             radius: 24,
                                             backgroundColor: AppTheme.selfBubbleColor,
-                                            child: Text(
-                                              group.name.substring(0, 1).toUpperCase(),
-                                              style: const TextStyle(
-                                                color: AppTheme.primaryColor,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 18,
-                                              ),
-                                            ),
+                                            backgroundImage: group.avatarUrl.isNotEmpty
+                                                ? NetworkImage(group.avatarUrl)
+                                                : null,
+                                            child: group.avatarUrl.isEmpty
+                                                ? Text(
+                                                    group.name.substring(0, 1).toUpperCase(),
+                                                    style: const TextStyle(
+                                                      color: AppTheme.primaryColor,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 18,
+                                                    ),
+                                                  )
+                                                : null,
                                           ),
                                           title: Text(
                                             group.name,

@@ -231,6 +231,33 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  /// Updates group profile photo on server and updates local state memory
+  Future<bool> updateGroupPhoto(String groupId, String avatarUrl) async {
+    try {
+      final updatedGroup = await ApiService.updateGroupAvatar(
+        groupId: groupId,
+        avatarUrl: avatarUrl,
+      );
+
+      // Update in groups list
+      final index = _groups.indexWhere((g) => g.id == groupId);
+      if (index != -1) {
+        _groups[index] = _groups[index].copyWith(avatarUrl: updatedGroup.avatarUrl);
+      }
+
+      // Update in details cache
+      if (_groupDetails.containsKey(groupId)) {
+        _groupDetails[groupId] = _groupDetails[groupId]!.copyWith(avatarUrl: updatedGroup.avatarUrl);
+      }
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating group photo: $e');
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     _messageSubscription?.cancel();

@@ -138,6 +138,7 @@ router.get('/:groupId/details', async (req, res) => {
       name: group.name,
       code: group.code,
       createdBy: group.createdBy,
+      avatarUrl: group.avatarUrl || '',
       members: resolvedMembers,
       createdAt: group.createdAt
     });
@@ -158,6 +159,33 @@ router.get('/:groupId/messages', async (req, res) => {
   } catch (error) {
     console.error('Error fetching messages:', error);
     res.status(500).json({ message: 'Failed to retrieve chat messages.' });
+  }
+});
+
+// Update group profile picture (avatar)
+router.post('/:groupId/avatar', async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { avatarUrl } = req.body;
+
+    if (!groupId) {
+      return res.status(400).json({ message: 'GroupId is required.' });
+    }
+
+    const group = await Group.findByIdAndUpdate(
+      groupId,
+      { avatarUrl: avatarUrl || '' },
+      { new: true }
+    );
+
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found.' });
+    }
+
+    res.status(200).json(group);
+  } catch (error) {
+    console.error('Error updating group icon:', error);
+    res.status(500).json({ message: 'Failed to update group icon.' });
   }
 });
 

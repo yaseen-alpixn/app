@@ -187,15 +187,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Direct Upload via Cloudinary',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textLightColor,
-                      fontStyle: FontStyle.italic,
-                    ),
-              ),
               const SizedBox(height: 40),
+
               Form(
                 key: _formKey,
                 child: Column(

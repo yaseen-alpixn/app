@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../models/group.dart';
 import '../providers/chat_provider.dart';
+import '../services/cloudinary_service.dart';
 import '../theme/app_theme.dart';
 
 class GroupDetailsScreen extends StatefulWidget {
@@ -17,6 +21,67 @@ class GroupDetailsScreen extends StatefulWidget {
 }
 
 class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
+  bool _isUpdatingPhoto = false;
+
+  /// Select profile image from device gallery and update group photo
+  Future<void> _pickAndUploadGroupPhoto(GroupModel group) async {
+    final picker = ImagePicker();
+    try {
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 500,
+        maxHeight: 500,
+        imageQuality: 85,
+      );
+
+      if (pickedFile == null) return;
+
+      setState(() {
+        _isUpdatingPhoto = true;
+      });
+
+      final File file = File(pickedFile.path);
+      final uploadedUrl = await CloudinaryService.uploadImage(file);
+
+      if (!mounted) return;
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      final success = await chatProvider.updateGroupPhoto(group.id, uploadedUrl);
+
+
+      setState(() {
+        _isUpdatingPhoto = false;
+      });
+
+      if (!mounted) return;
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Group icon updated successfully!'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to save group icon on server.'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isUpdatingPhoto = false;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Upload failed: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -114,17 +179,54 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
                         child: Column(
                           children: [
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundColor: AppTheme.selfBubbleColor,
-                              child: Text(
-                                group.name.substring(0, 1).toUpperCase(),
-                                style: const TextStyle(
-                                  color: AppTheme.primaryColor,
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
+                            // Large Group Avatar wrapper
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                CircleAvatar(
+                                  radius: 44,
+                                  backgroundColor: AppTheme.selfBubbleColor,
+                                  backgroundImage: group.avatarUrl.isNotEmpty
+                                      ? NetworkImage(group.avatarUrl)
+                                      : null,
+                                  child: group.avatarUrl.isEmpty
+                                      ? Text(
+                                          group.name.substring(0, 1).toUpperCase(),
+                                          style: const TextStyle(
+                                            color: AppTheme.primaryColor,
+                                            fontSize: 32,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        )
+                                      : null,
                                 ),
-                              ),
+                                if (_isUpdatingPhoto)
+                                  Container(
+                                    width: 88,
+                                    height: 88,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.5),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: CircleAvatar(
+                                    backgroundColor: AppTheme.primaryColor,
+                                    radius: 14,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.camera_alt, size: 12, color: Colors.white),
+                                      onPressed: _isUpdatingPhoto ? null : () => _pickAndUploadGroupPhoto(group),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 16),
                             Text(

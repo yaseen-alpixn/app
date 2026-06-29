@@ -165,23 +165,45 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             );
           },
-          child: SizedBox(
-            width: double.infinity,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  widget.groupName,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: AppTheme.selfBubbleColor,
+                backgroundImage: (chatProvider.getDetails(widget.groupId)?.avatarUrl.isNotEmpty == true)
+                    ? NetworkImage(chatProvider.getDetails(widget.groupId)!.avatarUrl)
+                    : null,
+                child: (chatProvider.getDetails(widget.groupId) == null || chatProvider.getDetails(widget.groupId)!.avatarUrl.isEmpty)
+                    ? Text(
+                        widget.groupName.substring(0, 1).toUpperCase(),
+                        style: const TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      widget.groupName,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    const Text(
+                      'Tap here for group info',
+                      style: TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.normal),
+                    ),
+                  ],
                 ),
-                const Text(
-                  'Tap here for group info',
-                  style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.normal),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
+
         ),
       ),
       body: SafeArea(
