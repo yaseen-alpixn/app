@@ -34,6 +34,11 @@ app.use(express.json());
 app.use('/api/users', userRoutes);
 app.use('/api/groups', groupRoutes);
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.status(200).send('VASL Backend Server is running.');
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', env: process.env.NODE_ENV });
