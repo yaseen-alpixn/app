@@ -25,6 +25,7 @@ const io = socketIo(server, {
     methods: ['GET', 'POST'],
   }
 });
+app.set('socketio', io);
 
 // Middleware
 app.use(cors());
@@ -71,17 +72,37 @@ io.on('connection', (socket) => {
   // 3. Handle incoming message broadcast
   socket.on('send_message', async (payload, callback) => {
     try {
-      const { messageId, groupId, senderId, senderName, text, timestamp } = payload;
+      const { messageId, groupId, senderId, senderName, text, timestamp, type, fileUrl, fileName } = payload;
 
-      if (!messageId || !groupId || !senderId || !senderName || !text) {
+      if (!messageId || !groupId || !senderId || !senderName) {
         if (callback) callback({ error: 'Missing message fields.' });
         return;
       }
 
-      // Sanitize the message content before saving or broadcasting
-      const sanitizedText = sanitizeText(text);
-      if (!sanitizedText) {
-        if (callback) callback({ error: 'Message content cannot be blank or pure HTML.' });
+      // Check if group is locked and restrict post permissions
+      const group = await Group.findById(groupId);
+      if (group && group.isLocked) {
+        const isCreator = group.createdBy === senderId;
+        const isAdmin = group.admins && group.admins.includes(senderId);
+        if (!isCreator && !isAdmin) {
+          if (callback) callback({ error: 'This group is locked. Only admins can send messages.' });
+          return;
+        }
+      }
+
+      const msgType = type || 'text';
+      const fileLink = fileUrl || '';
+      const docName = fileName || '';
+
+      // If it's a text message or has a caption, sanitize it
+      let sanitizedText = '';
+      if (text && text.trim().length > 0) {
+        sanitizedText = sanitizeText(text);
+      }
+
+      // If it is text type and has no text content, reject
+      if (msgType === 'text' && !sanitizedText) {
+        if (callback) callback({ error: 'Message content cannot be blank.' });
         return;
       }
 
@@ -92,6 +113,9 @@ io.on('connection', (socket) => {
         senderId,
         senderName,
         text: sanitizedText,
+        type: msgType,
+        fileUrl: fileLink,
+        fileName: docName,
         timestamp: timestamp ? new Date(timestamp) : new Date(),
       });
 
@@ -104,6 +128,9 @@ io.on('connection', (socket) => {
         senderId,
         senderName,
         text: sanitizedText,
+        type: msgType,
+        fileUrl: fileLink,
+        fileName: docName,
         timestamp: newMessage.timestamp.toISOString(),
       };
 
@@ -115,7 +142,12 @@ io.on('connection', (socket) => {
       }
 
       // Fallback Push Notifications logic for offline room members
-      processOfflineNotifications(groupId, senderName, sanitizedText, senderId);
+      const pushText = msgType === 'text' 
+          ? sanitizedText 
+          : msgType === 'image' 
+              ? 'Shared an image' 
+              : 'Shared a file';
+      processOfflineNotifications(groupId, senderName, pushText, senderId);
 
     } catch (error) {
       console.error('Error handling socket message:', error);

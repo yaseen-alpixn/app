@@ -38,4 +38,31 @@ class CloudinaryService {
       throw Exception('Failed to connect to Cloudinary: $e');
     }
   }
+
+  /// Uploads a generic file to Cloudinary under /auto/upload endpoint
+  static Future<String> uploadFile(File file) async {
+    if (cloudName == 'vasl-cloud' || uploadPreset == 'vasl-preset') {
+      await Future.delayed(const Duration(milliseconds: 1500));
+      return 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+    }
+
+    try {
+      final uri = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/auto/upload');
+      final request = http.MultipartRequest('POST', uri)
+        ..fields['upload_preset'] = uploadPreset
+        ..files.add(await http.MultipartFile.fromPath('file', file.path));
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> data = json.decode(responseBody);
+        return data['secure_url'] ?? '';
+      } else {
+        throw Exception('Server returned status code: ${response.statusCode}\nResponse: $responseBody');
+      }
+    } catch (e) {
+      throw Exception('Failed to connect to Cloudinary: $e');
+    }
+  }
 }

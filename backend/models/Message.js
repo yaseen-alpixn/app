@@ -22,7 +22,20 @@ const messageSchema = new mongoose.Schema({
   },
   text: {
     type: String,
-    required: true,
+    default: '',
+  },
+  type: {
+    type: String,
+    enum: ['text', 'image', 'file'],
+    default: 'text',
+  },
+  fileUrl: {
+    type: String,
+    default: '',
+  },
+  fileName: {
+    type: String,
+    default: '',
   },
   timestamp: {
     type: Date,

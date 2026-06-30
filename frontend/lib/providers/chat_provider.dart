@@ -18,7 +18,12 @@ class ChatProvider extends ChangeNotifier {
   final Map<String, bool> _isLoadingDetails = {};
   
   String? _errorMessage;
+  String? _currentUserId;
   StreamSubscription<MessageModel>? _messageSubscription;
+  StreamSubscription<Map<String, dynamic>>? _groupDeletedSubscription;
+  StreamSubscription<Map<String, dynamic>>? _userKickedSubscription;
+  StreamSubscription<Map<String, dynamic>>? _requestAcceptedSubscription;
+  StreamSubscription<Map<String, dynamic>>? _settingsUpdatedSubscription;
 
   List<GroupModel> get groups => _groups;
   bool get isLoadingGroups => _isLoadingGroups;
@@ -27,6 +32,12 @@ class ChatProvider extends ChangeNotifier {
   ChatProvider(this._socketService) {
     // Listen for real-time messages received via Socket.io
     _messageSubscription = _socketService.messageStream.listen(_handleIncomingMessage);
+    
+    // Subscribe to group settings and member event streams
+    _groupDeletedSubscription = _socketService.groupDeletedStream.listen(_handleGroupDeleted);
+    _userKickedSubscription = _socketService.userKickedStream.listen(_handleUserKicked);
+    _requestAcceptedSubscription = _socketService.requestAcceptedStream.listen(_handleRequestAccepted);
+    _settingsUpdatedSubscription = _socketService.settingsUpdatedStream.listen(_handleSettingsUpdated);
   }
 
   List<MessageModel> getMessages(String groupId) {
@@ -42,6 +53,7 @@ class ChatProvider extends ChangeNotifier {
 
   /// Loads all groups the user is currently a member of
   Future<void> loadGroups(String userId) async {
+    _currentUserId = userId;
     _isLoadingGroups = true;
     _errorMessage = null;
     notifyListeners();
@@ -163,7 +175,15 @@ class ChatProvider extends ChangeNotifier {
   }
 
   /// Sends a group message utilizing the Optimistic UI pattern
-  Future<void> sendMessage(String groupId, String senderId, String senderName, String text) async {
+  Future<void> sendMessage(
+    String groupId,
+    String senderId,
+    String senderName,
+    String text, {
+    String type = 'text',
+    String fileUrl = '',
+    String fileName = '',
+  }) async {
     final messageId = const Uuid().v4();
     final tempMessage = MessageModel(
       messageId: messageId,
@@ -171,6 +191,9 @@ class ChatProvider extends ChangeNotifier {
       senderId: senderId,
       senderName: senderName,
       text: text,
+      type: type,
+      fileUrl: fileUrl,
+      fileName: fileName,
       timestamp: DateTime.now(),
       isSent: false, // Optimistic UI: Clock/sending status icon active
     );
@@ -258,9 +281,192 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  void _handleGroupDeleted(Map<String, dynamic> data) {
+    final String? groupId = data['groupId'];
+    if (groupId != null) {
+      _groups.removeWhere((g) => g.id == groupId);
+      _groupMessages.remove(groupId);
+      _groupDetails.remove(groupId);
+      notifyListeners();
+    }
+  }
+
+  void _handleUserKicked(Map<String, dynamic> data) {
+    final String? groupId = data['groupId'];
+    final String? userId = data['userId'];
+    if (groupId != null && userId != null) {
+      if (userId == _currentUserId) {
+        _groups.removeWhere((g) => g.id == groupId);
+        _groupMessages.remove(groupId);
+        _groupDetails.remove(groupId);
+        notifyListeners();
+      } else {
+        if (_groupDetails.containsKey(groupId)) {
+          loadGroupDetails(groupId);
+        }
+      }
+    }
+  }
+
+  void _handleRequestAccepted(Map<String, dynamic> data) {
+    final String? groupId = data['groupId'];
+    final String? userId = data['userId'];
+    if (groupId != null && userId != null && userId == _currentUserId) {
+      if (_currentUserId != null) {
+        loadGroups(_currentUserId!);
+      }
+    }
+  }
+
+  void _handleSettingsUpdated(Map<String, dynamic> data) {
+    final String? groupId = data['groupId'];
+    final bool? isLocked = data['isLocked'];
+    final String? privacy = data['privacy'];
+    if (groupId != null) {
+      if (_groupDetails.containsKey(groupId)) {
+        final current = _groupDetails[groupId]!;
+        _groupDetails[groupId] = current.copyWith(
+          isLocked: isLocked ?? current.isLocked,
+          privacy: privacy ?? current.privacy,
+        );
+      }
+      
+      final index = _groups.indexWhere((g) => g.id == groupId);
+      if (index != -1) {
+        _groups[index] = _groups[index].copyWith(
+          isLocked: isLocked ?? _groups[index].isLocked,
+          privacy: privacy ?? _groups[index].privacy,
+        );
+      }
+      notifyListeners();
+    }
+  }
+
+  /// Promotes a member to admin
+  Future<bool> promoteMember(String groupId, String userId) async {
+    try {
+      final updatedGroup = await ApiService.promoteUser(groupId, userId);
+      _updateDetailsCache(groupId, updatedGroup);
+      return true;
+    } catch (e) {
+      debugPrint('Error promoting member: $e');
+      return false;
+    }
+  }
+
+  /// Demotes an admin back to member
+  Future<bool> demoteAdmin(String groupId, String userId) async {
+    try {
+      final updatedGroup = await ApiService.demoteUser(groupId, userId);
+      _updateDetailsCache(groupId, updatedGroup);
+      return true;
+    } catch (e) {
+      debugPrint('Error demoting admin: $e');
+      return false;
+    }
+  }
+
+  /// Kicks a member out of the group
+  Future<bool> kickMember(String groupId, String userId) async {
+    try {
+      final updatedGroup = await ApiService.kickUser(groupId, userId);
+      _updateDetailsCache(groupId, updatedGroup);
+      return true;
+    } catch (e) {
+      debugPrint('Error kicking member: $e');
+      return false;
+    }
+  }
+
+  /// Toggles locked status
+  Future<bool> toggleLockGroup(String groupId, bool isLocked) async {
+    try {
+      final updatedGroup = await ApiService.lockGroup(groupId, isLocked);
+      _updateDetailsCache(groupId, updatedGroup);
+      return true;
+    } catch (e) {
+      debugPrint('Error toggling lock settings: $e');
+      return false;
+    }
+  }
+
+  /// Updates group privacy (public/private)
+  Future<bool> updateGroupPrivacy(String groupId, String privacy) async {
+    try {
+      final updatedGroup = await ApiService.setPrivacy(groupId, privacy);
+      _updateDetailsCache(groupId, updatedGroup);
+      return true;
+    } catch (e) {
+      debugPrint('Error updating group privacy: $e');
+      return false;
+    }
+  }
+
+  /// Approves pending join request
+  Future<bool> approveJoinRequest(String groupId, String userId) async {
+    try {
+      final updatedGroup = await ApiService.acceptRequest(groupId, userId);
+      _updateDetailsCache(groupId, updatedGroup);
+      return true;
+    } catch (e) {
+      debugPrint('Error approving request: $e');
+      return false;
+    }
+  }
+
+  /// Declines pending join request
+  Future<bool> declineJoinRequest(String groupId, String userId) async {
+    try {
+      final updatedGroup = await ApiService.rejectRequest(groupId, userId);
+      _updateDetailsCache(groupId, updatedGroup);
+      return true;
+    } catch (e) {
+      debugPrint('Error declining request: $e');
+      return false;
+    }
+  }
+
+  /// Deletes a group permanently
+  Future<bool> deleteGroupPermanently(String groupId) async {
+    try {
+      final success = await ApiService.deleteGroup(groupId);
+      if (success) {
+        _groups.removeWhere((g) => g.id == groupId);
+        _groupMessages.remove(groupId);
+        _groupDetails.remove(groupId);
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error deleting group: $e');
+      return false;
+    }
+  }
+
+  void _updateDetailsCache(String groupId, GroupModel updatedGroup) {
+    _groupDetails[groupId] = updatedGroup;
+    final index = _groups.indexWhere((g) => g.id == groupId);
+    if (index != -1) {
+      _groups[index] = _groups[index].copyWith(
+        admins: updatedGroup.admins,
+        isLocked: updatedGroup.isLocked,
+        privacy: updatedGroup.privacy,
+        members: updatedGroup.members,
+        resolvedMembers: updatedGroup.resolvedMembers,
+        requests: updatedGroup.requests,
+      );
+    }
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _messageSubscription?.cancel();
+    _groupDeletedSubscription?.cancel();
+    _userKickedSubscription?.cancel();
+    _requestAcceptedSubscription?.cancel();
+    _settingsUpdatedSubscription?.cancel();
     super.dispose();
   }
 }

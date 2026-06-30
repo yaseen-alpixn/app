@@ -23,6 +23,21 @@ const groupSchema = new mongoose.Schema({
   avatarUrl: {
     type: String,
     default: '',
+  },
+  admins: [{
+    type: String,
+  }],
+  requests: [{
+    type: String,
+  }],
+  isLocked: {
+    type: Boolean,
+    default: false,
+  },
+  privacy: {
+    type: String,
+    enum: ['public', 'private'],
+    default: 'public',
   }
 }, {
   timestamps: true

@@ -8,6 +8,10 @@ class GroupModel {
   final List<UserModel> resolvedMembers;
   final String createdBy;
   final String avatarUrl;
+  final List<String> admins;
+  final List<UserModel> requests;
+  final bool isLocked;
+  final String privacy;
   final DateTime? createdAt;
 
   GroupModel({
@@ -18,6 +22,10 @@ class GroupModel {
     this.resolvedMembers = const [],
     required this.createdBy,
     this.avatarUrl = '',
+    this.admins = const [],
+    this.requests = const [],
+    this.isLocked = false,
+    this.privacy = 'public',
     this.createdAt,
   });
 
@@ -38,6 +46,20 @@ class GroupModel {
       }
     }
 
+    List<UserModel> rawRequests = [];
+    if (json['requests'] != null) {
+      for (var item in json['requests']) {
+        if (item is Map<String, dynamic>) {
+          rawRequests.add(UserModel.fromJson(item));
+        }
+      }
+    }
+
+    List<String> rawAdmins = [];
+    if (json['admins'] != null) {
+      rawAdmins = List<String>.from(json['admins']);
+    }
+
     return GroupModel(
       id: json['_id'] ?? json['id'] ?? '',
       name: json['name'] ?? '',
@@ -46,6 +68,10 @@ class GroupModel {
       resolvedMembers: resolved,
       createdBy: json['createdBy'] ?? '',
       avatarUrl: json['avatarUrl'] ?? '',
+      admins: rawAdmins,
+      requests: rawRequests,
+      isLocked: json['isLocked'] ?? false,
+      privacy: json['privacy'] ?? 'public',
       createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) : null,
     );
   }
@@ -60,6 +86,10 @@ class GroupModel {
           : members,
       'createdBy': createdBy,
       'avatarUrl': avatarUrl,
+      'admins': admins,
+      'requests': requests.map((e) => e.toJson()).toList(),
+      'isLocked': isLocked,
+      'privacy': privacy,
       'createdAt': createdAt?.toIso8601String(),
     };
   }
@@ -72,6 +102,10 @@ class GroupModel {
     List<UserModel>? resolvedMembers,
     String? createdBy,
     String? avatarUrl,
+    List<String>? admins,
+    List<UserModel>? requests,
+    bool? isLocked,
+    String? privacy,
     DateTime? createdAt,
   }) {
     return GroupModel(
@@ -82,6 +116,10 @@ class GroupModel {
       resolvedMembers: resolvedMembers ?? this.resolvedMembers,
       createdBy: createdBy ?? this.createdBy,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      admins: admins ?? this.admins,
+      requests: requests ?? this.requests,
+      isLocked: isLocked ?? this.isLocked,
+      privacy: privacy ?? this.privacy,
       createdAt: createdAt ?? this.createdAt,
     );
   }

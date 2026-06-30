@@ -5,6 +5,9 @@ class MessageModel {
   final String senderName;
   final String text;
   final DateTime timestamp;
+  final String type;
+  final String fileUrl;
+  final String fileName;
   
   // Custom field to manage local Optimistic UI state
   final bool isSent;
@@ -16,6 +19,9 @@ class MessageModel {
     required this.senderName,
     required this.text,
     required this.timestamp,
+    this.type = 'text',
+    this.fileUrl = '',
+    this.fileName = '',
     this.isSent = true,
   });
 
@@ -29,6 +35,9 @@ class MessageModel {
       timestamp: json['timestamp'] != null 
           ? DateTime.parse(json['timestamp']) 
           : DateTime.now(),
+      type: json['type'] ?? 'text',
+      fileUrl: json['fileUrl'] ?? '',
+      fileName: json['fileName'] ?? '',
       isSent: json['isSent'] ?? true,
     );
   }
@@ -40,6 +49,9 @@ class MessageModel {
       'senderId': senderId,
       'senderName': senderName,
       'text': text,
+      'type': type,
+      'fileUrl': fileUrl,
+      'fileName': fileName,
       'timestamp': timestamp.toIso8601String(),
     };
   }
@@ -51,6 +63,9 @@ class MessageModel {
     String? senderName,
     String? text,
     DateTime? timestamp,
+    String? type,
+    String? fileUrl,
+    String? fileName,
     bool? isSent,
   }) {
     return MessageModel(
@@ -60,6 +75,9 @@ class MessageModel {
       senderName: senderName ?? this.senderName,
       text: text ?? this.text,
       timestamp: timestamp ?? this.timestamp,
+      type: type ?? this.type,
+      fileUrl: fileUrl ?? this.fileUrl,
+      fileName: fileName ?? this.fileName,
       isSent: isSent ?? this.isSent,
     );
   }

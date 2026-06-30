@@ -166,4 +166,163 @@ class ApiService {
       throw Exception('Network error: $e');
     }
   }
+
+  /// Promote a member to sub-creator (admin)
+  static Future<GroupModel> promoteUser(String groupId, String userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/groups/$groupId/promote'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'userId': userId}),
+      );
+
+      if (response.statusCode == 200) {
+        return GroupModel.fromJson(json.decode(response.body));
+      } else {
+        final err = json.decode(response.body);
+        throw Exception(err['message'] ?? 'Failed to promote user.');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  /// Demote a sub-creator (admin) back to regular member
+  static Future<GroupModel> demoteUser(String groupId, String userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/groups/$groupId/demote'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'userId': userId}),
+      );
+
+      if (response.statusCode == 200) {
+        return GroupModel.fromJson(json.decode(response.body));
+      } else {
+        final err = json.decode(response.body);
+        throw Exception(err['message'] ?? 'Failed to demote user.');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  /// Kick/remove a user from the group
+  static Future<GroupModel> kickUser(String groupId, String userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/groups/$groupId/kick'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'userId': userId}),
+      );
+
+      if (response.statusCode == 200) {
+        return GroupModel.fromJson(json.decode(response.body));
+      } else {
+        final err = json.decode(response.body);
+        throw Exception(err['message'] ?? 'Failed to remove user.');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  /// Lock/unlock group chat sending permissions
+  static Future<GroupModel> lockGroup(String groupId, bool isLocked) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/groups/$groupId/lock'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'isLocked': isLocked}),
+      );
+
+      if (response.statusCode == 200) {
+        return GroupModel.fromJson(json.decode(response.body));
+      } else {
+        final err = json.decode(response.body);
+        throw Exception(err['message'] ?? 'Failed to update lock settings.');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  /// Set group privacy (public/private)
+  static Future<GroupModel> setPrivacy(String groupId, String privacy) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/groups/$groupId/privacy'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'privacy': privacy}),
+      );
+
+      if (response.statusCode == 200) {
+        return GroupModel.fromJson(json.decode(response.body));
+      } else {
+        final err = json.decode(response.body);
+        throw Exception(err['message'] ?? 'Failed to update privacy settings.');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  /// Approve a user's join request
+  static Future<GroupModel> acceptRequest(String groupId, String userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/groups/$groupId/requests/accept'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'userId': userId}),
+      );
+
+      if (response.statusCode == 200) {
+        return GroupModel.fromJson(json.decode(response.body));
+      } else {
+        final err = json.decode(response.body);
+        throw Exception(err['message'] ?? 'Failed to approve join request.');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  /// Reject/decline a user's join request
+  static Future<GroupModel> rejectRequest(String groupId, String userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/groups/$groupId/requests/reject'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'userId': userId}),
+      );
+
+      if (response.statusCode == 200) {
+        return GroupModel.fromJson(json.decode(response.body));
+      } else {
+        final err = json.decode(response.body);
+        throw Exception(err['message'] ?? 'Failed to decline request.');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  /// Delete a group permanently
+  static Future<bool> deleteGroup(String groupId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/groups/$groupId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        final err = json.decode(response.body);
+        throw Exception(err['message'] ?? 'Failed to delete group.');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
 }

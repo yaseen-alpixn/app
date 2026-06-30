@@ -19,6 +19,26 @@ class SocketService extends ChangeNotifier {
       StreamController<MessageModel>.broadcast();
   Stream<MessageModel> get messageStream => _messageStreamController.stream;
 
+  // Stream for group deletion events
+  final StreamController<Map<String, dynamic>> _groupDeletedStreamController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get groupDeletedStream => _groupDeletedStreamController.stream;
+
+  // Stream for user kicked events
+  final StreamController<Map<String, dynamic>> _userKickedStreamController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get userKickedStream => _userKickedStreamController.stream;
+
+  // Stream for accepted join requests
+  final StreamController<Map<String, dynamic>> _requestAcceptedStreamController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get requestAcceptedStream => _requestAcceptedStreamController.stream;
+
+  // Stream for settings updates
+  final StreamController<Map<String, dynamic>> _settingsUpdatedStreamController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get settingsUpdatedStream => _settingsUpdatedStreamController.stream;
+
   /// Connects to the Socket.io server and registers the user
   void connect(String userId) {
     if (_socket != null && _socket!.connected) {
@@ -80,6 +100,38 @@ class SocketService extends ChangeNotifier {
         debugPrint('Error parsing received socket message: $e');
       }
     });
+
+    _socket!.on('group_deleted', (data) {
+      try {
+        _groupDeletedStreamController.add(Map<String, dynamic>.from(data));
+      } catch (e) {
+        debugPrint('Error parsing group_deleted event: $e');
+      }
+    });
+
+    _socket!.on('user_kicked', (data) {
+      try {
+        _userKickedStreamController.add(Map<String, dynamic>.from(data));
+      } catch (e) {
+        debugPrint('Error parsing user_kicked event: $e');
+      }
+    });
+
+    _socket!.on('request_accepted', (data) {
+      try {
+        _requestAcceptedStreamController.add(Map<String, dynamic>.from(data));
+      } catch (e) {
+        debugPrint('Error parsing request_accepted event: $e');
+      }
+    });
+
+    _socket!.on('group_settings_updated', (data) {
+      try {
+        _settingsUpdatedStreamController.add(Map<String, dynamic>.from(data));
+      } catch (e) {
+        debugPrint('Error parsing group_settings_updated event: $e');
+      }
+    });
   }
 
   /// Join a group room on the socket backend
@@ -134,6 +186,10 @@ class SocketService extends ChangeNotifier {
   void dispose() {
     disconnect();
     _messageStreamController.close();
+    _groupDeletedStreamController.close();
+    _userKickedStreamController.close();
+    _requestAcceptedStreamController.close();
+    _settingsUpdatedStreamController.close();
     super.dispose();
   }
 }
